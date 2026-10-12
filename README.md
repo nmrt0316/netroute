@@ -59,8 +59,7 @@
 
 ```bash
 # 1. 下载脚本
-sudo curl -fsSL -o /root/netroute.sh \
-    https://raw.githubusercontent.com/nmrt0316/netroute/main/netroute.sh
+sudo curl -fsSL -o /root/netroute.sh https://raw.githubusercontent.com/nmrt0316/netroute/main/netroute.sh
 
 # 2. 修复 Windows 换行符（可选）
 sudo sed -i 's/\r$//' /root/netroute.sh
