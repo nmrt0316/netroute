@@ -133,12 +133,60 @@ sudo /root/netroute.sh
 | `/etc/public-return-route.conf` | 保存用户配置（网卡、IP、网关、端口） |
 | `/etc/systemd/system/public-return-route.service` | systemd 开机自启服务 |
 
+## ❓ 常见问题
+
+### Q1: 会不会把我的机器搞断网？
+**不会。** 脚本只操作 `fwmark`、`table 100` 和 `iptables mangle` 表，完全不碰 DNS、网卡配置和默认路由。就算配置填错，最多是特定端口访问不通，SSH 和内网依然正常。
+
+### Q2: 为什么菜单显示「未配置」但规则明明在生效？
+这是 iptables 显示格式差异导致的。脚本已兼容 `--set-mark 100` 和 `--set-xmark 0x64` 两种写法。
+
+### Q3: 支持哪些系统？
+目前只在 **Debian 12/13** 上测试通过。理论上兼容使用 `iptables` 和 `systemd` 的其他 Linux 发行版，但未做完整验证。
+
+### Q4: 支持 IPv6 吗？
+不支持，脚本只处理 IPv4。
+
+### Q5: 为什么支持这么复杂的策略路由，却完全不担心搞坏系统？
+因为它只操作 `fwmark` 和路由表，完全不修改系统默认路由和DNS。最坏的情况只是特定端口不通，你的 SSH 和基础网络永远安全。
+
 ## 🧹 卸载 / 回滚
+
+### 方式一：通过菜单清理（推荐）
 
 ```bash
 sudo /root/netroute.sh
 # 选择 4，确认清理
 ```
+
+### 方式二：手动彻底清理（脚本丢失时使用）
+
+如果不小心删除了 `netroute.sh`，可以手动执行以下命令清理所有残留：
+
+```bash
+# 清理路由规则
+sudo ip rule del fwmark 100 table 100 2>/dev/null || true
+sudo ip route flush table 100 2>/dev/null || true
+
+# 清理 iptables 规则（兼容两种 mark 写法）
+sudo iptables -t mangle -S PREROUTING | grep "CONNMARK" | \
+    sed 's/^-A //' | while read rule; do
+        sudo iptables -t mangle -D $rule 2>/dev/null
+    done
+sudo iptables -t mangle -D OUTPUT -j CONNMARK --restore-mark 2>/dev/null || true
+
+# 停止并删除 systemd 服务
+sudo systemctl disable --now public-return-route.service 2>/dev/null || true
+sudo rm -f /etc/systemd/system/public-return-route.service
+sudo systemctl daemon-reload
+
+# 删除配置文件
+sudo rm -f /etc/public-return-route.conf
+```
+
+## ⚠️ 免责声明
+
+本脚本操作系统的网络层规则。虽然经过谨慎设计，但使用者仍需自行承担风险。建议在生产环境使用前先做好快照或备份。
 
 ## 🤝 贡献
 
