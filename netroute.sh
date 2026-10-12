@@ -1,4 +1,8 @@
 #!/bin/bash
+# netroute.sh
+# Author: nmrt0316
+# GitHub: https://github.com/nmrt0316/netroute
+
 CONF="/etc/public-return-route.conf"
 SCRIPT_PATH=$(readlink -f "$0")
 SERVICE_FILE="/etc/systemd/system/public-return-route.service"
